@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MypyJsonOutput",
+  "description": "Official mypy JSON output schema (mypy 1.13+)",
+  "type": "object",
+  "properties": {
+    "file": {
+      "type": "string",
+      "description": "File path"
+    },
+    "line": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Line number (1-indexed)"
+    },
+    "column": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Column number (0-indexed)"
+    },
+    "message": {
+      "type": "string",
+      "description": "Error message"
+    },
+    "hint": {
+      "anyOf": [
+        {"type": "string"},
+        {"type": "null"}
+      ],
+      "description": "Hints joined with newlines, or null"
+    },
+    "code": {
+      "anyOf": [
+        {"type": "string"},
+        {"type": "null"}
+      ],
+      "description": "Error code like 'assignment', 'arg-type'"
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["error", "note"],
+      "description": "Severity level"
+    }
+  },
+  "required": ["file", "line", "column", "message", "severity"],
+  "additionalProperties": false,
+  "_meta": {
+    "fingerprint": "da92ebf2ae80d1f9",
+    "source": "mypy.error_formatter.JSONFormatter.report_error",
+    "mypy_version": "1.13",
+    "generated": "2025-01-01T00:00:00Z"
+  }
+}
