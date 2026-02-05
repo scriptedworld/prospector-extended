@@ -2,6 +2,7 @@
 
 This module patches prospector's TOOLS dict to add/replace tools:
 - mypy: Improved implementation with robust JSON parsing (replaces built-in)
+- vulture: Dead code detection with whitelist support (replaces built-in)
 - complexipy: Cognitive complexity analysis (new)
 - interrogate: Docstring coverage analysis (new)
 
@@ -25,10 +26,11 @@ def patch_prospector_tools() -> None:
     """
     from prospector import tools
 
-    from prospector_extended.tools import ComplexipyTool, InterrogateTool, MypyTool
+    from prospector_extended.tools import ComplexipyTool, InterrogateTool, MypyTool, VultureTool
 
-    # Replace mypy with our improved version
+    # Replace built-in tools with improved versions
     tools.TOOLS["mypy"] = MypyTool
+    tools.TOOLS["vulture"] = VultureTool
 
     # Add new tools
     tools.TOOLS["complexipy"] = ComplexipyTool

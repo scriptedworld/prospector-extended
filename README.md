@@ -6,7 +6,8 @@ Extended [Prospector](https://github.com/PyCQA/prospector) with improved and add
 
 ### Improved Tools
 
-- **mypy**: Robust JSON parsing with Pydantic validation, text fallback for syntax errors, full configuration support
+- **mypy**: Robust JSON parsing with Pydantic validation, text fallback for syntax errors, full configuration support, Python 3.14 compatibility fix
+- **vulture**: Dead code detection with **whitelist support** (prospector-extended exclusive feature)
 
 ### New Tools
 
@@ -18,12 +19,14 @@ Extended [Prospector](https://github.com/PyCQA/prospector) with improved and add
 Prospector's built-in tool integrations can have issues:
 - mypy JSON parsing can break on certain output formats
 - Configuration options aren't always properly passed through
+- vulture lacks whitelist support for suppressing false positives
 - No support for newer tools like complexipy or interrogate
 
 This package addresses these issues by:
 - Using `mypy.api.run()` directly with robust JSON parsing
 - Implementing Pydantic-based validation with text fallback
 - Supporting all standard tool configuration options
+- Adding **whitelist support for vulture** (scan whitelist files first to mark items as "used")
 - Adding cognitive complexity and docstring coverage analysis
 
 ## Installation
@@ -74,6 +77,11 @@ bandit:
 
 vulture:
   run: true
+  options:
+    # prospector-extended exclusive: whitelist support
+    min-confidence: 80
+    whitelist-paths:
+      - vulture_whitelist.py
 
 pylint:
   run: true
@@ -126,11 +134,11 @@ fail-under = 80
 | Tool | What it catches | Source |
 |------|-----------------|--------|
 | **ruff** | Linting, imports, bugs, cyclomatic complexity, design thresholds, docstring style | Prospector extra |
-| **mypy** | Type errors (strict checking) | prospector-extended |
-| **complexipy** | Cognitive complexity (code understandability) | prospector-extended |
-| **interrogate** | Missing docstrings (coverage %) | prospector-extended |
+| **mypy** | Type errors (strict checking) | prospector-extended (improved) |
+| **vulture** | Dead/unused code with whitelist support | prospector-extended (improved) |
+| **complexipy** | Cognitive complexity (code understandability) | prospector-extended (new) |
+| **interrogate** | Missing docstrings (coverage %) | prospector-extended (new) |
 | **pylint** | Duplicate/copy-paste code | Prospector extra |
-| **vulture** | Dead/unused code | Prospector extra |
 | **bandit** | Security vulnerabilities | Prospector extra |
 | **dodgy** | Hardcoded secrets/passwords | Prospector built-in |
 
@@ -139,6 +147,38 @@ fail-under = 80
 ### mypy
 
 Uses standard mypy error codes: `arg-type`, `return-value`, `assignment`, etc.
+
+### vulture (prospector-extended)
+
+| Code | Description |
+|------|-------------|
+| `unused-function` | Function is never called |
+| `unused-property` | Property is never accessed |
+| `unused-variable` | Variable is assigned but never used |
+| `unused-attribute` | Attribute is never accessed |
+| `V000` | Could not handle file encoding |
+| `V001` | Whitelist file not found |
+
+**Whitelist files** are Python files that "use" items to suppress false positives:
+
+```python
+# vulture_whitelist.py
+from mymodule import MyClass
+
+_instance = MyClass()
+_instance.some_field  # marks 'some_field' as used
+```
+
+Configure in `.prospector.yaml`:
+
+```yaml
+vulture:
+  run: true
+  options:
+    min-confidence: 80
+    whitelist-paths:          # prospector-extended exclusive
+      - vulture_whitelist.py
+```
 
 ### complexipy
 

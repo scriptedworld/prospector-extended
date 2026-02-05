@@ -1,0 +1,135 @@
+# =============================================================================
+# PROSPECTOR EXTENDED CONFIGURATION
+# =============================================================================
+# Tools enabled via prospector-extended:
+#   - mypy (improved with robust JSON parsing, Python 3.14 support)
+#   - vulture (improved with whitelist support)
+#   - complexipy (cognitive complexity)
+#   - interrogate (docstring coverage)
+#
+# Tools enabled via prospector extras:
+#   - ruff (linting, formatting rules)
+#   - bandit (security)
+#   - pylint (duplicate code only)
+#
+# Disabled (handled by ruff):
+#   - pycodestyle, pyflakes, pydocstyle, mccabe
+#
+# Run: prospector-extended --output-format json src/
+# =============================================================================
+
+strictness: high
+doc-warnings: true
+test-warnings: false
+max-line-length: 120
+
+# Output format: text, json, yaml, xunit, pylint, grouped, emacs, vscode
+output-format: json
+
+# Paths to ignore
+ignore-paths:
+  - .venv
+  - build
+  - dist
+  - docs
+  - "*.egg-info"
+  - __pycache__
+  - tests/fixtures_exempt
+
+ignore-patterns:
+  - "test_*.py"
+  - "*_test.py"
+  - "conftest.py"
+
+# =============================================================================
+# TOOL CONFIGURATION
+# =============================================================================
+
+# --- Ruff (handles linting, imports, bugs, complexity thresholds) ---
+ruff:
+  run: true
+  options:
+    # Most config comes from pyproject.toml
+    # This just ensures prospector runs it
+    config: pyproject.toml
+
+# --- Pylint (duplicate code detection only - everything else disabled) ---
+pylint:
+  run: true
+  options:
+    disable: all
+    enable: duplicate-code
+    min-similarity-lines: 4
+    ignore-comments: true
+    ignore-docstrings: true
+    ignore-imports: true
+
+# --- Bandit (full security coverage) ---
+bandit:
+  run: true
+  options:
+    config: pyproject.toml
+
+# --- Vulture (dead code detection - via prospector-extended) ---
+# Uses improved implementation with whitelist support
+vulture:
+  run: true
+  options:
+    min-confidence: 80
+    # prospector-extended exclusive: whitelist files
+    # These are Python files that "use" items to suppress false positives
+    whitelist-paths:
+      - vulture_whitelist.py
+
+# --- Mypy (type checking - via prospector-extended) ---
+# Uses improved implementation with robust JSON parsing
+mypy:
+  run: true
+  options:
+    strict: true
+    python-version: "3.12"
+    show-error-codes: true
+    show-column-numbers: true
+    warn-return-any: true
+    warn-unused-configs: true
+    disallow-untyped-defs: true
+    disallow-incomplete-defs: true
+    check-untyped-defs: true
+    no-implicit-optional: true
+    strict-equality: true
+    follow-imports: normal
+
+# --- Complexipy (cognitive complexity - via prospector-extended) ---
+complexipy:
+  run: true
+  options:
+    max-complexity: 15
+
+# --- Interrogate (docstring coverage - via prospector-extended) ---
+interrogate:
+  run: true
+  options:
+    ignore-init-method: true
+    ignore-init-module: true
+    ignore-magic: true
+    ignore-nested-classes: true
+    fail-under: 80
+
+# =============================================================================
+# DISABLED TOOLS (handled by ruff)
+# =============================================================================
+pycodestyle:
+  run: false
+
+pyflakes:
+  run: false
+
+pydocstyle:
+  run: false
+
+mccabe:
+  run: false
+
+# Dodgy is fine to keep - checks for hardcoded secrets
+dodgy:
+  run: true

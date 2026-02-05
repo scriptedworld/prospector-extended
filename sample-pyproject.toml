@@ -7,8 +7,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "prospector-extended"
-version = "0.2.0"
-description = "Extended Prospector with improved mypy, vulture (whitelist support), complexipy, and interrogate tools"
+version = "0.1.0"
+description = "Extended Prospector with improved mypy, complexipy, and interrogate tools"
 readme = "README.md"
 license = "GPL-2.0-or-later"
 requires-python = ">=3.12"
@@ -100,8 +100,8 @@ addopts = "-v"
 # RUFF - Linting & Formatting
 # =============================================================================
 [tool.ruff]
-line-length = 150
-target-version = "py314"
+line-length = 120
+target-version = "py312"
 src = ["src", "tests"]
 
 [tool.ruff.format]

@@ -161,11 +161,24 @@ class MypyTool(ToolBase):  # type: ignore[misc]
 
     def _run_mypy(self, paths: list[str]) -> tuple[str, str]:
         """Run mypy using the Python API."""
+        import os
+
         import mypy.api
 
-        args = ["--output=json", *self.options, *paths]
-        stdout, stderr, _ = mypy.api.run(args)
-        return stdout, stderr
+        # Python 3.14+ argparse checks TTY for color support during init,
+        # which fails when stdout/stderr are captured. Set NO_COLOR to
+        # prevent this before mypy parses arguments.
+        old_no_color = os.environ.get("NO_COLOR")
+        os.environ["NO_COLOR"] = "1"
+        try:
+            args = ["--output=json", *self.options, *paths]
+            stdout, stderr, _ = mypy.api.run(args)
+            return stdout, stderr
+        finally:
+            if old_no_color is None:
+                os.environ.pop("NO_COLOR", None)
+            else:
+                os.environ["NO_COLOR"] = old_no_color
 
     @staticmethod
     def _error_to_message(error: MypyJsonOutput) -> Message | None:
