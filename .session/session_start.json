@@ -1,0 +1,1 @@
+{"mode": "bootstrapping-with-known-violations", "timestamp": "2026-03-04 05:42:08", "result": "PASS", "notes": "4 known violations in vulture_tool.py tracked as task 3.01"}

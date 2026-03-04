@@ -1,0 +1,1 @@
+{"pre": {"timestamp": "2026-03-04 05:43:00", "tests_collected": 0, "tests_passed": 0, "tests_failed": 0, "coverage": "N/A", "quality_passed": false, "overall_result": "PASS_WITH_EXCEPTIONS", "known_exceptions": [{"issue": "4 quality violations in vulture_tool.py", "reason": "Known issues tracked as task 3.01", "documented_in": "docs/CODE_REVIEW.md"}]}}
