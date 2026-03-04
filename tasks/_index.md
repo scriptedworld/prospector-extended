@@ -28,7 +28,7 @@ Create standard documentation files per template and CLAUDE.md requirements.
 
 | Task | Status | File | Description |
 |------|--------|------|-------------|
-| 2.01 | [ ] | [2.01-project-requirements.md](phase-2/2.01-project-requirements.md) | Add PROJECT.md and REQUIREMENTS.md |
+| 2.01 | [~] | [2.01-project-requirements.md](phase-2/2.01-project-requirements.md) | Add PROJECT.md and REQUIREMENTS.md |
 | 2.03 | [ ] | [2.03-changelog-security.md](phase-2/2.03-changelog-security.md) | Add CHANGELOG.md and SECURITY.md |
 | 2.05 | [ ] | [2.05-dev-docs.md](phase-2/2.05-dev-docs.md) | Add docs/DEVELOPMENT.md, docs/ARCHITECTURE.md, docs/SUPPRESSIONS.md |
 | 2.07 | [ ] | [2.07-state-files.md](phase-2/2.07-state-files.md) | Add TODO.md, STATUS.md, NEXT_STEPS.md |
