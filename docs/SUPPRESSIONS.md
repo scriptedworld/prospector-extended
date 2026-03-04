@@ -12,31 +12,20 @@ before adding the inline comment.
 
 ## Type Suppressions (`# type: ignore`)
 
-### misc — Untyped base class (ToolBase)
+### misc — Untyped base class (ToolBase / Vulture)
 
 | File | Line | Suppression | Status |
 |------|------|-------------|--------|
 | `src/prospector_extended/tools/base.py` | 26 | `# type: ignore[misc]` | Approved |
+| `src/prospector_extended/tools/vulture_tool.py` | 34 | `# type: ignore[misc]` | Approved |
 | `src/prospector_extended/tools/mypy_tool.py` | 128 | `# type: ignore[misc]` | Approved |
 | `src/prospector_extended/tools/vulture_tool.py` | 157 | `# type: ignore[misc]` | Approved |
 
-**Justification:** Prospector's `ToolBase` class has no type stubs or `py.typed` marker.
-Mypy strict mode flags subclassing untyped classes as `[misc]`. Cannot be fixed without
-upstream type stubs.
+**Justification:** Prospector's `ToolBase` and vulture's `Vulture` classes have no type
+stubs or `py.typed` marker. Mypy strict mode flags subclassing untyped classes as `[misc]`.
+Cannot be fixed without upstream type stubs.
 
-**Approved:** 2025-01-01 (initial release)
-
-### attr-defined — Vulture encoding error attribute
-
-| File | Line | Suppression | Status |
-|------|------|-------------|--------|
-| `src/prospector_extended/tools/vulture_tool.py` | 94 | `# type: ignore[attr-defined]` | Approved |
-
-**Justification:** Vulture raises `UnicodeDecodeError` which has an `encoding` attribute
-at runtime, but mypy's stub for `UnicodeDecodeError` doesn't include it. The attribute
-access is safe — `encoding` is always present on `UnicodeDecodeError` instances.
-
-**Approved:** 2025-01-15 (v0.2.0)
+**Approved:** 2025-01-01 (initial release), updated 2026-03-04
 
 ---
 

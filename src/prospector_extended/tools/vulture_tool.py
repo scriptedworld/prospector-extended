@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     from prospector.finder import FileFinder
 
 
-class ProspectorVultureExtended(Vulture):
+class ProspectorVultureExtended(Vulture):  # type: ignore[misc]  # Vulture has no type stubs
     """Extended Vulture with whitelist support.
 
     Scans whitelist files before source files so that items referenced
@@ -91,7 +91,7 @@ class ProspectorVultureExtended(Vulture):
                         filepath,
                         "vulture",
                         "V000",
-                        message=f"Could not handle the encoding of this file: {err.encoding}",  # type: ignore[attr-defined]
+                        message=f"Could not handle the encoding of this file: {err.encoding}",
                     )
                 )
             return
@@ -178,12 +178,12 @@ class VultureTool(ToolBase):  # type: ignore[misc]
         self._min_confidence: int = 60
         self.ignore_codes: list[str] = []
 
-    def configure(self, prospector_config: ProspectorConfig, found_files: FileFinder) -> tuple[str, Iterable[Message]] | None:
+    def configure(self, prospector_config: ProspectorConfig, _found_files: FileFinder) -> tuple[str, Iterable[Message]] | None:
         """Configure vulture options from prospector config.
 
         Args:
             prospector_config: The prospector configuration.
-            found_files: Files to analyze (unused here, used in run()).
+            _found_files: Files to analyze (unused here, used in run()).
 
         Returns:
             None on success.
