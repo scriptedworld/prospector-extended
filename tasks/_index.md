@@ -6,8 +6,8 @@
 |-------|-------|------|-----------|
 | 1 — Project Infrastructure | 6 | 6 | 0 |
 | 2 — Documentation | 4 | 4 | 0 |
-| 3 — Quality & Test Coverage | 5 | 0 | 5 |
-| **Total** | **15** | **10** | **5** |
+| 3 — Quality & Test Coverage | 5 | 5 | 0 |
+| **Total** | **15** | **15** | **0** |
 
 ## Phase 1: Project Infrastructure
 
@@ -43,4 +43,4 @@ Fix quality violations and close test coverage gaps identified in code review.
 | 3.03 | [x] | [3.03-test-cli.md](phase-3/3.03-test-cli.md) | Add tests for cli.py |
 | 3.05 | [x] | [3.05-test-vulture-tool.md](phase-3/3.05-test-vulture-tool.md) | Add tests for VultureTool |
 | 3.07 | [x] | [3.07-test-base-tool.md](phase-3/3.07-test-base-tool.md) | Add tests for ExtendedToolBase |
-| 3.09 | [~] | [3.09-test-error-paths.md](phase-3/3.09-test-error-paths.md) | Add error path and edge case tests |
+| 3.09 | [x] | [3.09-test-error-paths.md](phase-3/3.09-test-error-paths.md) | Add error path and edge case tests |
