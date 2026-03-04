@@ -4,10 +4,10 @@
 
 | Phase | Total | Done | Remaining |
 |-------|-------|------|-----------|
-| 1 — Project Infrastructure | 6 | 1 | 5 |
+| 1 — Project Infrastructure | 6 | 2 | 4 |
 | 2 — Documentation | 4 | 0 | 4 |
 | 3 — Quality & Test Coverage | 5 | 0 | 5 |
-| **Total** | **15** | **1** | **14** |
+| **Total** | **15** | **2** | **13** |
 
 ## Phase 1: Project Infrastructure
 
@@ -16,7 +16,7 @@ Align build system, tooling, and configuration with python-base-template standar
 | Task | Status | File | Description |
 |------|--------|------|-------------|
 | 1.00 | [x] | [1.00-infrastructure-design.md](phase-1/1.00-infrastructure-design.md) | Infrastructure alignment design review |
-| 1.01 | [ ] | [1.01-gitignore-scaffolding.md](phase-1/1.01-gitignore-scaffolding.md) | Add .gitignore and directory scaffolding |
+| 1.01 | [x] | [1.01-gitignore-scaffolding.md](phase-1/1.01-gitignore-scaffolding.md) | Add .gitignore and directory scaffolding |
 | 1.03 | [ ] | [1.03-pyproject-overhaul.md](phase-1/1.03-pyproject-overhaul.md) | Overhaul pyproject.toml to match template |
 | 1.05 | [ ] | [1.05-pre-commit-config.md](phase-1/1.05-pre-commit-config.md) | Add .pre-commit-config.yaml |
 | 1.07 | [ ] | [1.07-prospector-yaml-align.md](phase-1/1.07-prospector-yaml-align.md) | Align .prospector.yaml with template |

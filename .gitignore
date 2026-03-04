@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Claude Code workflow (local-only)
+.claude/
+.task/
+.session/
+tasks/
+lessons/
+NEXT_STEPS.md
+
+# Type checking
+.mypy_cache/
+
+# Linting
+.ruff_cache/
+.complexipy_cache/
+
+# Generated docs (regenerate with: uv run poe docs)
+docs/api/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Secrets
+.env
+
+# OS
+.DS_Store
