@@ -4,10 +4,10 @@
 
 | Phase | Total | Done | Remaining |
 |-------|-------|------|-----------|
-| 1 — Project Infrastructure | 6 | 4 | 2 |
+| 1 — Project Infrastructure | 6 | 5 | 1 |
 | 2 — Documentation | 4 | 0 | 4 |
 | 3 — Quality & Test Coverage | 5 | 0 | 5 |
-| **Total** | **15** | **4** | **11** |
+| **Total** | **15** | **5** | **10** |
 
 ## Phase 1: Project Infrastructure
 
@@ -19,7 +19,7 @@ Align build system, tooling, and configuration with python-base-template standar
 | 1.01 | [x] | [1.01-gitignore-scaffolding.md](phase-1/1.01-gitignore-scaffolding.md) | Add .gitignore and directory scaffolding |
 | 1.03 | [x] | [1.03-pyproject-overhaul.md](phase-1/1.03-pyproject-overhaul.md) | Overhaul pyproject.toml to match template |
 | 1.05 | [x] | [1.05-pre-commit-config.md](phase-1/1.05-pre-commit-config.md) | Add .pre-commit-config.yaml |
-| 1.07 | [ ] | [1.07-prospector-yaml-align.md](phase-1/1.07-prospector-yaml-align.md) | Align .prospector.yaml with template |
+| 1.07 | [x] | [1.07-prospector-yaml-align.md](phase-1/1.07-prospector-yaml-align.md) | Align .prospector.yaml with template |
 | 1.09 | [ ] | [1.09-vulture-whitelist.md](phase-1/1.09-vulture-whitelist.md) | Add vulture_whitelist.py |
 
 ## Phase 2: Documentation
