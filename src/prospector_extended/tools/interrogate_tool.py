@@ -60,9 +60,7 @@ class InterrogateTool(ExtendedToolBase):
     def _configure_options(self, options: dict[str, Any]) -> None:
         """Configure interrogate-specific options."""
         self._config_options = {
-            interrogate_key: options[prospector_key]
-            for prospector_key, interrogate_key in OPTION_MAPPING.items()
-            if prospector_key in options
+            interrogate_key: options[prospector_key] for prospector_key, interrogate_key in OPTION_MAPPING.items() if prospector_key in options
         }
 
     def _analyze_file(self, filepath: Path) -> list[Message]:

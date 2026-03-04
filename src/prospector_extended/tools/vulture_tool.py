@@ -21,11 +21,10 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from vulture import Vulture
-
 from prospector.encoding import CouldNotHandleEncoding, read_py_file
 from prospector.message import Location, Message, make_tool_error_message
 from prospector.tools.base import ToolBase
+from vulture import Vulture
 
 if TYPE_CHECKING:
     from prospector.config import ProspectorConfig
@@ -179,9 +178,7 @@ class VultureTool(ToolBase):  # type: ignore[misc]
         self._min_confidence: int = 60
         self.ignore_codes: list[str] = []
 
-    def configure(
-        self, prospector_config: ProspectorConfig, found_files: FileFinder
-    ) -> tuple[str, Iterable[Message]] | None:
+    def configure(self, prospector_config: ProspectorConfig, found_files: FileFinder) -> tuple[str, Iterable[Message]] | None:
         """Configure vulture options from prospector config.
 
         Args:
@@ -222,8 +219,4 @@ class VultureTool(ToolBase):  # type: ignore[misc]
             min_confidence=self._min_confidence,
         )
         vulture.scavenge()
-        return [
-            message
-            for message in vulture.get_messages()
-            if message.code not in self.ignore_codes
-        ]
+        return [message for message in vulture.get_messages() if message.code not in self.ignore_codes]

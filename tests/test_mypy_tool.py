@@ -132,7 +132,6 @@ class TestMypyToolRun:
         assert messages == []
 
 
-
 class TestMypyOutputConversion:
     """Tests for mypy output to prospector message conversion."""
 

@@ -16,9 +16,9 @@ from prospector_extended.tools.mypy_tool import MypyTool
 from prospector_extended.tools.vulture_tool import VultureTool
 
 __all__ = [
+    "ComplexipyTool",
     "ExtendedToolBase",
+    "InterrogateTool",
     "MypyTool",
     "VultureTool",
-    "ComplexipyTool",
-    "InterrogateTool",
 ]

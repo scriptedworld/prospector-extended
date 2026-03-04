@@ -86,7 +86,7 @@ class TestMypyTextParsing:
 
     def test_parse_error_with_code(self) -> None:
         """Test parsing text error with code."""
-        line = 'test.py:10:5: error: Incompatible types [arg-type]'
+        line = "test.py:10:5: error: Incompatible types [arg-type]"
         result = parse_mypy_text_line(line)
         assert result is not None
         assert result.file == "test.py"
@@ -96,7 +96,7 @@ class TestMypyTextParsing:
 
     def test_parse_error_without_column(self) -> None:
         """Test parsing text error without column."""
-        line = 'test.py:10: error: Missing return'
+        line = "test.py:10: error: Missing return"
         result = parse_mypy_text_line(line)
         assert result is not None
         assert result.file == "test.py"

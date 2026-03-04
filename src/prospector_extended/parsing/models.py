@@ -60,9 +60,7 @@ def get_mypy_json_schema() -> dict[str, object]:
 
 # Regex for mypy text output: file:line:col: severity: message [code]
 # Or: file:line: severity: message [code] (without column)
-_MYPY_TEXT_PATTERN = re.compile(
-    r"^(.+?):(\d+):(?:(\d+):)?\s*(error|warning|note):\s*(.+?)(?:\s*\[([^\]]+)\])?$"
-)
+_MYPY_TEXT_PATTERN = re.compile(r"^(.+?):(\d+):(?:(\d+):)?\s*(error|warning|note):\s*(.+?)(?:\s*\[([^\]]+)\])?$")
 
 
 def parse_mypy_text_line(line: str) -> MypyJsonOutput | None:
