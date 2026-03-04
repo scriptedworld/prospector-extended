@@ -18,9 +18,6 @@ htmlcov/
 .claude/
 .task/
 .session/
-tasks/
-lessons/
-NEXT_STEPS.md
 
 # Type checking
 .mypy_cache/

@@ -5,9 +5,9 @@
 | Phase | Total | Done | Remaining |
 |-------|-------|------|-----------|
 | 1 — Project Infrastructure | 6 | 6 | 0 |
-| 2 — Documentation | 4 | 3 | 1 |
+| 2 — Documentation | 4 | 4 | 0 |
 | 3 — Quality & Test Coverage | 5 | 0 | 5 |
-| **Total** | **15** | **9** | **6** |
+| **Total** | **15** | **10** | **5** |
 
 ## Phase 1: Project Infrastructure
 
@@ -31,7 +31,7 @@ Create standard documentation files per template and CLAUDE.md requirements.
 | 2.01 | [x] | [2.01-project-requirements.md](phase-2/2.01-project-requirements.md) | Add PROJECT.md and REQUIREMENTS.md |
 | 2.03 | [x] | [2.03-changelog-security.md](phase-2/2.03-changelog-security.md) | Add CHANGELOG.md and SECURITY.md |
 | 2.05 | [x] | [2.05-dev-docs.md](phase-2/2.05-dev-docs.md) | Add docs/DEVELOPMENT.md, docs/ARCHITECTURE.md, docs/SUPPRESSIONS.md |
-| 2.07 | [~] | [2.07-state-files.md](phase-2/2.07-state-files.md) | Add TODO.md, STATUS.md, NEXT_STEPS.md |
+| 2.07 | [x] | [2.07-state-files.md](phase-2/2.07-state-files.md) | Add TODO.md, STATUS.md, NEXT_STEPS.md |
 
 ## Phase 3: Quality & Test Coverage
 
