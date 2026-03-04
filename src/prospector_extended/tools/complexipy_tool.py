@@ -46,11 +46,7 @@ class ComplexipyTool(ExtendedToolBase):
 
         try:
             file_result = file_complexity(str(filepath.absolute()))
-            return [
-                msg
-                for func in file_result.functions
-                if (msg := self._check_function(filepath, func)) is not None
-            ]
+            return [msg for func in file_result.functions if (msg := self._check_function(filepath, func)) is not None]
         except SyntaxError as e:
             msg = self._syntax_error_message(filepath, e)
             return [msg] if msg else []
@@ -69,11 +65,7 @@ class ComplexipyTool(ExtendedToolBase):
             code=CODE_COMPLEXITY,
             filepath=filepath,
             line=func.line_start,
-            message=(
-                f"Cognitive complexity of {func.complexity} "
-                f"exceeds threshold of {self.max_complexity} "
-                f"for function '{func.name}'"
-            ),
+            message=(f"Cognitive complexity of {func.complexity} exceeds threshold of {self.max_complexity} for function '{func.name}'"),
             function=func.name,
         )
 

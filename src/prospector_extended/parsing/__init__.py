@@ -31,27 +31,23 @@ from prospector_extended.parsing.registry import (
 )
 
 __all__ = [
-    # Registry
-    "TypeRegistry",
-    "RegisteredSchema",
+    "MYPY_SCHEMA_FINGERPRINT",
+    "AlwaysMatcher",
+    "DiscriminatorMatcher",
+    "MypyJsonOutput",
     "ParseResult",
     "ParsedRecord",
+    "PredicateMatcher",
+    "RegisteredSchema",
+    "RequiredFieldsMatcher",
+    "SchemaMatcher",
+    "TypeRegistry",
+    "TypeTagMatcher",
     "UnparsedLine",
     "ValidationFailure",
-    # Matchers
-    "SchemaMatcher",
-    "TypeTagMatcher",
-    "DiscriminatorMatcher",
-    "RequiredFieldsMatcher",
-    "PredicateMatcher",
-    "AlwaysMatcher",
-    # Utilities
     "compute_fingerprint",
-    "schema_from_fields",
-    # Mypy models
-    "MypyJsonOutput",
-    "MYPY_SCHEMA_FINGERPRINT",
     "get_mypy_json_schema",
     "parse_mypy_output",
     "parse_mypy_text_line",
+    "schema_from_fields",
 ]

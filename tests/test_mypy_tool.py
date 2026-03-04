@@ -132,7 +132,6 @@ class TestMypyToolRun:
         assert messages == []
 
 
-
 class TestMypyOutputConversion:
     """Tests for mypy output to prospector message conversion."""
 
@@ -192,3 +191,52 @@ class TestMypyOutputConversion:
 
         assert message is not None
         assert "Try adding type annotation" in message.message
+
+
+class TestMypyToolEdgeCases:
+    """Error path and edge case tests for MypyTool."""
+
+    def test_run_on_nonexistent_file(self) -> None:
+        tool = MypyTool()
+        config = MockProspectorConfig()
+        tool.configure(config, None)
+        finder = MockFileFinder([Path("/nonexistent/path/fake.py")])
+        messages = tool.run(finder)
+        assert isinstance(messages, list)
+
+    def test_format_option_false_returns_empty(self) -> None:
+        result = MypyTool._format_option("strict", False)
+        assert result == []
+
+    def test_format_option_true_returns_flag(self) -> None:
+        result = MypyTool._format_option("strict", True)
+        assert result == ["--strict"]
+
+    def test_format_option_list_value(self) -> None:
+        result = MypyTool._format_option("plugin", ["a", "b"])
+        assert result == ["--plugin=a", "--plugin=b"]
+
+    def test_format_option_string_value(self) -> None:
+        result = MypyTool._format_option("python-version", "3.12")
+        assert result == ["--python-version=3.12"]
+
+    def test_run_unconfigured_uses_defaults(self) -> None:
+        tool = MypyTool()
+        finder = MockFileFinder([])
+        messages = tool.run(finder)
+        assert messages == []
+
+    def test_error_to_message_with_no_code(self) -> None:
+        from prospector_extended.parsing import MypyJsonOutput
+
+        error = MypyJsonOutput(
+            file="test.py",
+            line=1,
+            column=0,
+            message="Some error",
+            severity="error",
+            code=None,
+        )
+        msg = MypyTool._error_to_message(error)
+        assert msg is not None
+        assert msg.code == "error"
