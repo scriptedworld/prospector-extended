@@ -41,6 +41,6 @@ Fix quality violations and close test coverage gaps identified in code review.
 |------|--------|------|-------------|
 | 3.01 | [x] | [3.01-fix-quality-violations.md](phase-3/3.01-fix-quality-violations.md) | Fix 4 quality violations in vulture_tool.py |
 | 3.03 | [x] | [3.03-test-cli.md](phase-3/3.03-test-cli.md) | Add tests for cli.py |
-| 3.05 | [~] | [3.05-test-vulture-tool.md](phase-3/3.05-test-vulture-tool.md) | Add tests for VultureTool |
-| 3.07 | [ ] | [3.07-test-base-tool.md](phase-3/3.07-test-base-tool.md) | Add tests for ExtendedToolBase |
+| 3.05 | [x] | [3.05-test-vulture-tool.md](phase-3/3.05-test-vulture-tool.md) | Add tests for VultureTool |
+| 3.07 | [~] | [3.07-test-base-tool.md](phase-3/3.07-test-base-tool.md) | Add tests for ExtendedToolBase |
 | 3.09 | [ ] | [3.09-test-error-paths.md](phase-3/3.09-test-error-paths.md) | Add error path and edge case tests |
