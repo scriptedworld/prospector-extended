@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -244,3 +245,66 @@ class TestUtilities:
         assert "name" in schema["required"]
         assert "count" in schema["required"]
         assert "tag" not in schema["required"]
+
+
+class TestEdgeCases:
+    """Error path and edge case tests for parsing."""
+
+    def test_parse_line_empty_string(self) -> None:
+        registry = TypeRegistry()
+        result = registry.parse_line("")
+        assert isinstance(result, UnparsedLine)
+        assert result.reason == "empty"
+
+    def test_parse_line_non_json(self) -> None:
+        registry = TypeRegistry()
+        result = registry.parse_line("not json at all")
+        assert isinstance(result, UnparsedLine)
+        assert result.reason == "not JSON"
+
+    def test_parse_line_malformed_json(self) -> None:
+        registry = TypeRegistry()
+        result = registry.parse_line("{invalid json}")
+        assert isinstance(result, UnparsedLine)
+        assert "JSON decode error" in result.reason
+
+    def test_parse_line_valid_json_no_matching_schema(self) -> None:
+        registry = TypeRegistry()
+        result = registry.parse_line('{"unknown": "data"}')
+        assert isinstance(result, ValidationFailure)
+
+    def test_fingerprint_changes_when_schema_changes(self) -> None:
+        schema1 = {"type": "object", "properties": {"a": {"type": "string"}}}
+        schema2 = {"type": "object", "properties": {"a": {"type": "integer"}}}
+        fp1 = compute_fingerprint(schema1)
+        fp2 = compute_fingerprint(schema2)
+        assert fp1 != fp2
+
+    def test_matcher_priority_ordering(self) -> None:
+        registry = TypeRegistry()
+        low_priority_schema = schema_from_fields(required={"value": "string"}, title="Low")
+        high_priority_schema = schema_from_fields(required={"value": "string"}, title="High")
+        registry.register("low", low_priority_schema, matcher=RequiredFieldsMatcher(required_fields=frozenset({"value"})))
+        registry.register("high", high_priority_schema, matcher=TypeTagMatcher("$type", "special"))
+
+        data_with_tag = '{"$type": "special", "value": "test"}'
+        result = registry.parse_line(data_with_tag)
+        assert isinstance(result, ParsedRecord)
+        assert result.schema_name == "high"
+
+    def test_fixture_files_exist(self) -> None:
+        fixtures_dir = Path(__file__).parent / "fixtures_exempt"
+        assert fixtures_dir.exists()
+        assert (fixtures_dir / "clean.py").exists()
+        assert (fixtures_dir / "type_errors.py").exists()
+        assert (fixtures_dir / "high_complexity.py").exists()
+        assert (fixtures_dir / "missing_docstrings.py").exists()
+        assert (fixtures_dir / "dead_code.py").exists()
+
+    def test_parse_mypy_output_empty_input(self) -> None:
+        results = parse_mypy_output("", "")
+        assert results == []
+
+    def test_parse_mypy_output_whitespace_only(self) -> None:
+        results = parse_mypy_output("   \n\n  ", "")
+        assert results == []
