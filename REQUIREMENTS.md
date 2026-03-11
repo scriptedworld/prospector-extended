@@ -68,6 +68,24 @@ Extended Prospector with improved mypy, vulture (whitelist support), complexipy,
 - [x] Schema fingerprinting for drift detection
 - [x] Text fallback for non-JSON output
 
+### FR-007: Quantitative Code Metrics Output
+
+**Description:** Emit quantitative metrics alongside violations in JSON output. Current tools only surface threshold violations — this adds a `metrics` block with scores for ALL functions, LOC breakdowns, maintainability indexes, and structural analysis.
+
+**Acceptance Criteria:**
+- [ ] `metrics` block in JSON output alongside `summary` and `messages`
+- [ ] Cyclomatic complexity per function (radon cc) — all functions, not just violations
+- [ ] Cognitive complexity per function (complexipy) — all functions, not just violations
+- [ ] Raw LOC metrics per file (radon raw) — loc, sloc, comments, blanks
+- [ ] Maintainability index per file (radon mi) — score and rank (A-F)
+- [ ] Structural metrics (AST) — function length, nesting depth, parameter count, public/private counts
+- [ ] Docstring coverage percentage and per-type breakdown (interrogate)
+- [ ] Dead code summary by type (vulture)
+- [ ] Suppression counts (noqa, nosec, type: ignore)
+- [ ] Duplication metrics from pylint similarities
+- [ ] `--metrics` / `--no-metrics` CLI flag (default: enabled)
+- [ ] Backwards compatible — existing `summary` and `messages` unchanged
+
 ## Non-Functional Requirements
 
 ### NFR-001: Code Quality

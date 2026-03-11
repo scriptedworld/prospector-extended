@@ -1,44 +1,45 @@
-# Deep Dive Code Review: Prospector Extended
+# Deep Dive Code Review: prospector-extended
 
-**Date:** 2026-03-04
+**Date:** 2026-03-05
 **Version:** 0.2.0
-**Branch:** main (2 commits)
-**Reviewer:** Claude Code (automated deep analysis)
+**Branch:** main (20 commits)
 
 ## Executive Summary
 
-Prospector Extended is a Python static analysis aggregator that extends
-[Prospector](https://github.com/prospector-dev/prospector) with improved mypy
-integration, vulture whitelist support, complexipy cognitive complexity
-checking, and interrogate docstring coverage. At ~1,500 LOC across 11 source
-files, it's a focused, well-architected tool with excellent code quality
-fundamentals — complete type annotations, 100% docstring coverage, and clean
-separation of concerns via a strategy/template-method architecture.
+prospector-extended is a Python library that extends Prospector with improved mypy, vulture
+(whitelist support), complexipy, and interrogate tools for comprehensive Python code analysis.
+The codebase is compact (1,201 LOC across 11 source files) and demonstrates mature architectural
+thinking — clean module boundaries, well-chosen design patterns (Type Registry, Strategy,
+Template Method), and consistent adherence to modern Python practices including strict mypy,
+Google-style docstrings, and comprehensive type annotations.
 
-The project's strongest dimensions are its architecture (clean extension model,
-no circular dependencies, SOLID compliance) and code quality (strict mypy,
-Google-style docstrings, zero anti-patterns). Its weakest areas are
-infrastructure (no CI/CD pipeline, no pre-commit hooks — all enforcement is
-manual) and test coverage (46 tests but three major modules completely
-untested: CLI, VultureTool, ExtendedToolBase). Documentation is solid at the
-README level but lacks CHANGELOG, SECURITY, and contributor guides.
+The project's local quality tooling is excellent: 9 quality tools run through a unified
+`poe checks` pipeline, pre-commit hooks enforce formatting and conventional commits, and
+90.5% branch-inclusive test coverage validates behavior with 93 tests that favor real execution
+over mocking. Code quality is the project's strongest dimension — zero messages from
+prospector-extended's own analysis, strict mypy with no unjustified suppressions, and clean
+ruff/bandit results.
 
-Overall, this is well-engineered code that needs operational infrastructure to
-match its code quality.
+The most significant gap is the complete absence of CI/CD. Quality gates exist only locally via
+pre-commit hooks and poe tasks; there is no automated enforcement in a merge pipeline. This
+means developers can push code that fails tests, has type errors, or introduces security issues.
+Additionally, a single file (complexipy_tool.py at 77.1% coverage) currently blocks the
+`poe checks` pipeline, and a version mismatch between pyproject.toml (0.2.0) and `__init__.py`
+(0.1.0) needs resolution.
 
 ## Overall Grade: B
 
 | Dimension | Grade | Notes |
 |-----------|-------|-------|
-| Architecture | A | Clean extension model, strategy/template patterns, no circular deps |
-| Code Quality | A- | Complete typing, docstrings, consistent style; 4 minor tool findings |
-| Security | A | 0 bandit issues, safe deserialization, no hardcoded secrets |
-| Test Quality | C | 46 tests but CLI, VultureTool, ExtendedToolBase untested |
-| Error Handling | B | Graceful degradation but silent failures mask problems |
-| Performance | A | No issues, efficient algorithms, proper resource management |
-| Documentation | C | Good README but missing CHANGELOG, PROJECT.md, SECURITY.md |
-| Dependency Health | B | Lock file with hashes but loose version constraints |
-| Infrastructure | D | No CI/CD, no pre-commit hooks, all enforcement manual |
+| Architecture | A | Clean modular design, no circular deps, well-chosen patterns |
+| Code Quality | A | Zero tool messages, strict mypy, modern Python throughout |
+| Security | A | Bandit clean, safe subprocess handling, Pydantic validation |
+| Test Quality | B | 93 tests / 90.5% coverage, but one file below threshold |
+| Error Handling | B | Good specificity and degradation, but no timeouts on external calls |
+| Performance | A | No issues detected, efficient parsing, smart short-circuits |
+| Documentation | B | Comprehensive suite but missing CI/CD docs and troubleshooting guide |
+| Dependency Health | B | Well-managed with hash-verified lock file, but 3 unsuppressed CVEs |
+| Infrastructure | D | No CI/CD pipeline; pre-commit hooks provide only partial enforcement |
 
 ### Rating Scale
 - **A** — Excellent. Low complexity, well-structured, minimal issues.
@@ -51,316 +52,300 @@ match its code quality.
 
 | Severity | Count | Areas |
 |----------|-------|-------|
-| Critical | 2 | Infrastructure (no CI/CD, no pre-commit) |
-| Must-Fix | 4 | Test coverage gaps (CLI, VultureTool, ExtendedToolBase), quality violations |
-| High | 5 | Silent error handling, missing docs, test error paths, matcher testing |
-| Recommended | 7 | Validation errors, import surfacing, config validation, version constraints |
-| Nit | 5 | Import order, error formatting, test naming, sample file location, homepage URL |
+| Critical | 1 | Infrastructure (no CI/CD pipeline) |
+| Must-Fix | 3 | Version mismatch, coverage threshold failure, check task sequencing |
+| High | 6 | CVEs (transitive), silent tool failures, no timeouts, CLI docs, regex fragility, vulture API compat |
+| Recommended | 12 | Type hint clarity, validator strictness, pre-commit gaps, untested paths, doc gaps |
+| Nit | 6 | Error message paths, assertion specificity, fixture scope, changelog format |
 
 ## Architecture Assessment
 
 ### Strengths
 
-1. **Excellent Separation of Concerns** — The codebase divides cleanly into three
-   layers: `parsing/` (schema validation, JSON/text parsing), `tools/` (Prospector
-   tool implementations), and `cli.py` (entry point, tool registration). Each module
-   has a single responsibility.
+**Excellent modular design with clear separation of concerns:**
+- Parsing infrastructure (`parsing/models.py` + `parsing/registry.py`) is completely decoupled
+  from tools
+- Tool base class (`ExtendedToolBase`) provides consistent interface for file-by-file analyzers
+- Each tool (ComplexipyTool, InterrogateTool, VultureTool, MypyTool) is independent
+- Dependency direction is acyclic: `cli` -> `tools` -> `base`, parsing is separate
+- No circular dependencies
 
-2. **Strong Extension Architecture** — `ExtendedToolBase` (`base.py:26-134`)
-   provides a template method pattern where subclasses implement `_configure_options()`
-   and `_analyze_file()`. This accommodates file-by-file tools (complexipy,
-   interrogate) while mypy and vulture use whole-project analysis via different
-   base classes.
+**Strong architecture patterns:**
+- Type Registry pattern (`parsing/registry.py`) provides extensible polymorphic JSON parsing
+  without coupling to specific tools
+- SchemaMatcher abstraction enables priority-based schema dispatching (TypeTagMatcher,
+  DiscriminatorMatcher, RequiredFieldsMatcher, PredicateMatcher)
+- CLI patch pattern (`cli.py`) allows runtime tool injection without modifying prospector internals
+- Layered error handling with graceful fallbacks (e.g., mypy JSON -> text parsing, vulture
+  confidence filtering)
 
-3. **Clean Dependency Flow** — No circular dependencies. Imports follow
-   `cli → tools → parsing` with no reverse paths. `TYPE_CHECKING` blocks
-   prevent circular imports at runtime.
+**Well-designed error boundaries:**
+- Proper validation at system boundaries (JSON parsing, tool output parsing)
+- Comprehensive exception handling with specific error types
+- Tools silently return empty message lists on expected errors (encoding, file not found, parse
+  errors), preserving other tools' output
+- Stderr messages from mypy are captured and converted to Message objects
 
-4. **Polymorphic Parsing Design** — The `TypeRegistry` (`registry.py:189-314`)
-   implements priority-sorted matcher dispatch: TypeTagMatcher (100),
-   DiscriminatorMatcher (80), PredicateMatcher (60), RequiredFieldsMatcher (50),
-   AlwaysMatcher (0). This is extensible without modifying existing matchers.
-
-5. **Single Registration Point** — Tool patching in `cli.py:32-37` provides
-   one place to add/remove tool integrations.
+**Modern Python practices throughout:**
+- Consistent use of `from __future__ import annotations` across files
+- Modern generic syntax (`list[str]`, `dict[str, Any]`) throughout
+- Walrus operator used effectively in conditionals
+- `TYPE_CHECKING` guards for imports that don't execute at runtime
 
 ### Areas Worth Noting
 
-1. **Typing Compromises (Justified)** — Three `type: ignore[misc]` suppressions
-   exist because Prospector's `ToolBase` is untyped. These are documented inline
-   and unavoidable given the upstream library.
+**[Must-Fix] Version inconsistency:**
+- `pyproject.toml:6` declares version `"0.2.0"`
+- `src/prospector_extended/__init__.py:42` declares `__version__ = "0.1.0"`
+- Commitizen expects these to be synced (configured in `pyproject.toml:267-270`)
 
-2. **Two Base Class Patterns** — File-by-file tools inherit `ExtendedToolBase`
-   while whole-project tools (mypy, vulture) inherit `ToolBase` directly. This is
-   a pragmatic design choice given how tools interact with Prospector's runner,
-   but creates two integration patterns to learn.
+**[Recommended] ExtendedToolBase not used by MypyTool:**
+- MypyTool inherits directly from `ToolBase` (`mypy_tool.py:128`) rather than `ExtendedToolBase`
+- This is intentional and documented: mypy runs once on all files, not file-by-file
+- Consider documenting this pattern if other all-at-once tools are added in the future
 
 ## Security Assessment
 
 ### Strengths
 
-1. **Zero Bandit Findings** — Security scan of all source code (1,842 LOC) found
-   no issues. No hardcoded secrets, no injection vectors, no unsafe deserialization.
-
-2. **Safe External Process Integration** — Uses Python APIs directly
-   (`mypy.api.run()`) rather than shell commands. No `shell=True`,
-   `os.system()`, or subprocess calls with untrusted input.
-
-3. **Pydantic Validation** — All JSON parsing uses `model_validate()` with
-   explicit validators ensuring safe defaults (line numbers ≥1, columns ≥0)
-   at `models.py:34-44`.
-
-4. **Environment State Isolation** — `mypy_tool.py:162-181` saves and restores
-   `NO_COLOR` in a try-finally block, preventing environment leakage.
+- **No hardcoded secrets** — `.gitignore` covers `.env` files and sensitive data; no credentials
+  in source
+- **Safe subprocess handling** — Uses `mypy.api.run()` instead of shell execution, avoiding
+  injection attacks; environment variable management is careful with save/restore pattern
+- **Input validation via Pydantic** — `parsing/models.py:34-44` validates line numbers and
+  columns with field validators before use
+- **Safe deserialization** — Uses `json.loads()` (safe) throughout; no pickle or unsafe YAML
+- **Security scanning configured** — Bandit integrated in quality gates via prospector-extended;
+  xray-audit for CVE scanning at pre-push
+- **Supply chain integrity** — `uv.lock` includes cryptographic hashes for all 89 packages
+- **Strict type safety** — Full strict mypy with documented overrides for untyped third-party
+  libraries only
 
 ### Findings
 
-1. **[Recommended] Missing Error Context in Silent Failures** —
-   `complexipy_tool.py:57` and `interrogate_tool.py:83` catch broad exceptions
-   (`OSError, UnicodeDecodeError, ValueError, AttributeError`) and return empty
-   lists silently. Users cannot distinguish "no issues found" from "analysis
-   failed." Add structured logging at DEBUG level for failed files.
+**[High] 3 unsuppressed CVEs in transitive dependencies** (from xray-audit):
+- CVE-2022-42969 in py:1.11.0 — ReDoS in Subversion parser (disputed by multiple third parties)
+- CVE-2018-20225 in pip:25.3 — Unintended package installation via `--extra-index-url`
+- CVE-2026-1703 in pip:25.3 — Path traversal during wheel extraction (limited impact)
 
-2. **[Recommended] Validation Error Masking** — `models.py:134-137` catches both
-   `json.JSONDecodeError` and `ValueError` together. Pydantic validation failures
-   (ValueError) are indistinguishable from malformed JSON. Consider separating
-   handlers to aid troubleshooting.
+Root cause: `py` and `pip` are transitive dependencies from test/build tooling, not used in
+application code. Consider documenting suppression rationale if continued acknowledgment is
+intentional.
 
-3. **[Recommended] Vulture Attribute Access Fragility** —
-   `vulture_tool.py:144` uses `hasattr(item, "lineno")` but falls through to
-   `item.first_lineno` without a safety net. If vulture removes both attributes
-   in a future version, this raises an uncaught `AttributeError`. Use
-   `getattr(item, 'first_lineno', 1)` as fallback.
-
-4. **[Recommended] Path Normalization** — Tool file paths use
-   `filepath.absolute()` but not `filepath.resolve()`, which doesn't normalize
-   symlinks. Document security assumptions about path handling.
+**[Recommended] Mypy command options validated but could be stricter:**
+- `mypy_tool.py:27-113` defines `VALID_OPTIONS` frozenset, but options are not validated beyond
+  membership; unexpected combinations could theoretically cause issues
 
 ## Error Handling and Resilience
 
 ### Strengths
 
-1. **Graceful Degradation** — All tool `_analyze_file()` methods return empty
-   lists on errors, allowing Prospector to continue with results from other tools.
-
-2. **Specific Exception Catching** — Uses targeted exception types (`SyntaxError`,
-   `OSError`, `UnicodeDecodeError`, `ImportError`) rather than bare `except`.
-
-3. **Resource Cleanup** — File operations use Pathlib's `.read_text()` /
-   `.write_text()` (internal cleanup); environment variable restoration uses
-   try-finally (`mypy_tool.py:173-181`).
-
-4. **Pydantic Field Validators** — Defensive validators coerce invalid values
-   to safe defaults: `max(1, v)` for line numbers, `max(0, v)` for columns
-   (`models.py:36-44`).
+- **Specific exception handling** — Targeted catches throughout: `SyntaxError`,
+  `UnicodeDecodeError`, `OSError`, `ValueError`, `AttributeError` with comments explaining
+  each (`complexipy_tool.py:50-57`, `interrogate_tool.py:81-86`)
+- **Graceful degradation on import failures** — Optional dependencies handled gracefully:
+  returns empty list if complexipy/interrogate not importable
+- **Encoding error handling** — Robust handling in `vulture_tool.py:86-96` with proper
+  distinction between source and whitelist file errors
+- **JSON parsing fallback** — Attempts JSON parsing, falls back to text format
+  (`parsing/models.py:128-139`)
+- **Resource cleanup** — Environment variable save/restore uses try/finally
+  (`mypy_tool.py:217-228`)
+- **Message filtering** — Disabled code filtering respects configuration across all tools
 
 ### Findings
 
-1. **[High] Mypy Exit Code Ignored** — `mypy_tool.py:175` discards mypy's exit
-   code (`stdout, stderr, _ = mypy.api.run(args)`). If mypy fails partially,
-   results appear complete. Check exit code or stderr to detect incomplete analysis.
+**[High] Silent failures in tools — no logging:**
+- `complexipy_tool.py:50-57`, `interrogate_tool.py:81-86`: When exceptions occur (syntax errors,
+  import failures), tools return empty lists without logging
+- Impact: Files with real problems are silently skipped; users see no indication of analysis gaps
+- Recommendation: Log at DEBUG level when skipping files due to errors
 
-2. **[High] Silent Tool Dependency Failures** — `complexipy_tool.py:44` and
-   `interrogate_tool.py:73` catch `ImportError` and return empty lists without
-   any indication that the tool is unavailable. Users can't tell if a tool found
-   no issues or simply wasn't installed.
+**[High] No timeout configuration on external tool execution:**
+- `mypy_tool.py:222`: `mypy.api.run(args)` has no timeout
+- `complexipy_tool.py:48`: `file_complexity()` has no timeout
+- `interrogate_tool.py:80`: `InterrogateCoverage()` has no timeout
+- Risk: Malformed Python files or pathological input could hang analysis indefinitely
 
-3. **[High] No Timeout on External Tools** — Mypy, complexipy, and interrogate
-   execution has no timeout configuration. A pathological file could hang
-   analysis indefinitely.
+**[High] VultureTool attribute compatibility across versions:**
+- `vulture_tool.py:140-143`: Works around vulture API variations (`item.file` vs
+  `item.filename`, `item.lineno` vs `item.first_lineno`)
+- Defensive but fragile; no documentation of supported vulture version range
 
-4. **[Recommended] Stderr Not Fully Processed** — `mypy_tool.py:158-159` only
-   parses stderr lines starting with `"mypy:"` or `"error:"`. Other diagnostic
-   messages (warnings, deprecations) are silently dropped.
+**[Recommended] Incomplete error messages in complexipy:**
+- `complexipy_tool.py:78`: `e.offset` could be `None` (SyntaxError.offset is optional)
+- Character parameter passed without null-checking; base class handles `None` but implicitly
 
-5. **[Nit] Inconsistent Error Message Formatting** — `vulture_tool.py:107,150`
-   mixes f-strings and `.format()` style. Standardize on f-strings.
+**[Recommended] Inconsistent error handling between tools:**
+- `complexipy_tool.py` and `interrogate_tool.py` catch `AttributeError` as internal errors
+- `mypy_tool.py` doesn't explicitly catch these
+- Suggests untested assumptions about tool APIs
 
 ## Performance
 
 ### Strengths
 
-1. **Efficient JSON Parsing** — `models.py:109-159` uses single-pass line
-   processing with fast-path checks (`startswith`) to skip non-JSON lines.
-
-2. **Smart Schema Dispatch** — `registry.py:250-280` tries matchers in priority
-   order with early exit on match.
-
-3. **No Unbounded Collections** — All data structures are sized by input.
-   No accumulating caches or growing buffers.
-
-4. **Appropriate Tool Invocation** — Mypy runs once with all files
-   (`mypy_tool.py:162-176`); Vulture uses a single instance. No N+1 patterns.
+- **Smart short-circuit paths:** TypeRegistry checks `line.startswith("{")` before JSON parsing;
+  MypyTool returns `[]` for empty paths; ComplexipyTool catches ImportError early
+- **Efficient parsing:** Walrus operator for parse-and-check; compiled regex at module level
+  (`_MYPY_TEXT_PATTERN`); no unnecessary intermediate collections
+- **Resource management:** Environment variable cleanup uses try/finally; no unbounded
+  collections
+- **Reasonable algorithmic complexity:** Schema matching is O(n) per line where n=number of
+  schemas (typically 1-5); all operations linear or better
 
 ### Findings
 
-No performance issues detected. The codebase demonstrates efficient,
-input-proportional resource usage throughout.
+**No performance issues detected.** All operations are linear or better. Tools properly delegate
+to subprocess/library calls rather than reimplementing analysis. The only potential improvement
+would be version-gating the Python 3.14+ `NO_COLOR` workaround, but this has negligible cost.
 
 ## Code Quality
 
 ### What's Done Well
 
-1. **Complete Type Annotations** — All function signatures fully typed with
-   modern syntax (`list[str]`, `X | None`). Strict mypy with
-   `disallow_untyped_defs = true`.
-
-2. **100% Docstring Coverage** — Google-style docstrings on all public
-   functions/classes with Args/Returns/Raises sections. Interrogate confirms
-   100% coverage.
-
-3. **Zero Anti-Patterns** — No mutable default arguments, no bare except
-   clauses, no global state, no commented-out code, no unused imports.
-
-4. **Consistent Style** — 150-char line length, snake_case functions,
-   PascalCase classes, sorted imports (stdlib → third-party → local).
-
-5. **Small Functions** — Maximum function length is 38 lines. Average ~22
-   lines. No function exceeds 60 lines.
+- **Type safety is rigorous:** Strict mypy, complete annotations, modern syntax (`list[str]`
+  not `List[str]`), justified `type: ignore` comments only for untyped third-party libraries
+- **Docstrings follow Google style consistently:** All public classes and functions documented;
+  Args, Returns, Raises sections present; 80%+ interrogate score
+- **Error handling is intentional, not defensive:** Try-except blocks catch specific known
+  exceptions with comments explaining each type
+- **Code organization is clean:** Well-distributed module sizes (24-385 lines), largest function
+  58 lines, max nesting 6 levels
+- **Naming consistency:** PascalCase classes, snake_case functions, kebab-case config options
+  mapped to snake_case internally
+- **No dead code:** vulture reports 0 findings; no commented-out code blocks
+- **No mutable default arguments:** All defaults are immutable or None
 
 ### Specific Code Observations
 
-1. **[Must-Fix] 4 Quality Baseline Violations** — All in `vulture_tool.py`:
-   - Line 35: mypy `misc` — Class cannot subclass "Vulture" (has type "Any")
-   - Line 95: mypy `unused-ignore` — Stale `type: ignore` comment
-   - Line 18: ruff `I001` — Import block unsorted
-   - Line 183: ruff `ARG002` — Unused method argument `found_files`
+**[High] Regex pattern assumes filename format:**
+- `parsing/models.py:63`: `_MYPY_TEXT_PATTERN` uses non-greedy `(.+?)` which could match too
+  little if filename contains colons (e.g., Windows paths, edge cases)
+- Pattern is correct for typical use but not robust against unusual filenames
 
-2. **[Recommended] Suppression Documentation Missing** — The project has ~5
-   `type: ignore` comments but no `docs/SUPPRESSIONS.md` documenting
-   justifications per CLAUDE.md guidelines.
+**[Recommended] Character parameter type hint ambiguity:**
+- `tools/base.py:104`: `character: int | None = 0` — default is `0` but type allows `None`;
+  semantics unclear (is `None` different from `0`?)
+- Consider `character: int = 0` if None has no distinct meaning
 
-3. **[Nit] Import Order** — `vulture_tool.py:18-28` has vulture import after
-   prospector imports. Fix via `ruff check --fix`.
+**[Recommended] MypyJsonOutput field validators are lenient:**
+- `parsing/models.py:34-38`: `ensure_positive_line()` silently converts `line=0` to `line=1`
+- Mypy should never return line 0; silently masking could hide upstream changes
+
+**[Recommended] Mypy NO_COLOR workaround could use version check:**
+- `mypy_tool.py:215-228`: Handles Python 3.14+ argparse TTY detection issue
+- Consider a version check to avoid unnecessary env manipulation on older Python
 
 ## Design Patterns
 
-**Patterns Used Well:**
+**Patterns Used (Well):**
 
-1. **Strategy Pattern** — `SchemaMatcher` hierarchy (`registry.py:58-147`)
-   with `TypeTagMatcher`, `DiscriminatorMatcher`, `RequiredFieldsMatcher`,
-   `PredicateMatcher`, `AlwaysMatcher`. Each encapsulates a matching algorithm,
-   sortable by priority.
-
-2. **Template Method** — `ExtendedToolBase` (`base.py:26-134`) defines the
-   workflow skeleton; subclasses implement `_configure_options()` and
-   `_analyze_file()`.
-
-3. **Builder Pattern** — `TypeRegistry` (`registry.py:189-314`) with fluent
-   `register()` returning `self`, plus `save()`/`load()` for persistence.
-
-4. **Adapter Pattern** — `ProspectorVultureExtended` (`vulture_tool.py:35-154`)
-   adapts Vulture's interface to Prospector's `Message` format, adding
-   whitelist support.
-
-5. **Registry Pattern** — Tool registration in `cli.py:32-37` provides a
-   single point of control.
+1. **Type Registry** (`parsing/registry.py`) — Extensible polymorphic JSON parsing inspired by
+   cattrs structure hooks
+2. **Strategy** (SchemaMatcher hierarchy) — Different matching strategies with priority ordering
+3. **Builder** (implicit in MypyTool) — Incremental command-line option construction
+4. **Template Method** (ExtendedToolBase) — Subclasses implement `_configure_options` and
+   `_analyze_file`; `run()` orchestrates
+5. **Adapter** (ProspectorVultureExtended) — Adapts vulture's `scavenge()` for whitelist support
+6. **Decorator** (CLI `patch_prospector_tools`) — Modifies prospector's TOOLS dict at runtime
 
 **SOLID Compliance:**
-- **Single Responsibility:** Each module has one reason to change
-- **Open/Closed:** Extensible via `SchemaMatcher`, `ExtendedToolBase`
-- **Liskov Substitution:** Subclasses properly implement interfaces
-- **Interface Segregation:** Small interfaces (`SchemaMatcher` has 2 methods)
-- **Dependency Inversion:** Tools depend on abstractions (`ToolBase`)
-
-**No Anti-Patterns Detected:** No God classes, circular deps, global state, or
-excessive mutation.
+- **Single Responsibility:** Each tool handles one tool; registry handles one format
+- **Open/Closed:** TypeRegistry is open for extension (new schemas via `register()`), closed
+  for modification
+- **Liskov Substitution:** ExtendedToolBase subclasses are substitutable; MypyTool follows
+  ToolBase contract
+- **Interface Segregation:** Small focused interfaces (SchemaMatcher, ExtendedToolBase)
+- **Dependency Inversion:** Tools depend on abstractions (ToolBase, FileFinder, ProspectorConfig)
 
 ## Test Quality
 
 ### Strengths
 
-1. **Well-organized test structure** — Tests grouped by class into logical
-   categories (Configuration, Execution, Parsing, Matchers).
-
-2. **Real behavior testing** — Tests exercise real tool execution on actual
-   fixture files rather than mocking subprocess calls.
-
-3. **Good assertion coverage** — Tests use specific value assertions
-   (`assert result.file == "test.py"`) rather than truthiness checks.
-
-4. **Comprehensive parsing tests** — 19 tests covering validators, matchers,
-   schema generation, and JSON/text parsing.
-
-5. **Boundary value testing** — Tests cover edge cases like empty file lists,
-   line number coercion (0→1), negative column numbers.
+- **Comprehensive fixture strategy:** `conftest.py` provides reusable fixtures; real code files
+  in `tests/fixtures_exempt/` exercise actual tool analysis
+- **Mock discipline:** Custom mock classes (MockProspectorConfig, MockFileFinder) are minimal
+  and match actual interfaces; real behavior testing preferred
+- **Strong edge case coverage:** Empty inputs, nonexistent files, disabled codes, threshold
+  variations all tested
+- **Good test independence:** No interdependencies; fresh instances and isolated mocking
+- **Clear naming:** Descriptive names like `test_run_on_complex_file`,
+  `test_disabled_code_skipped`
+- **Message validation:** Tests verify message properties (source, code, location, content)
+  against actual Prospector Message objects
 
 ### Test Organization
 
 | File | Tests | Category | Strategy |
 |------|-------|----------|----------|
-| test_complexipy_tool.py | 8 | Config, Execution | Unit with fixtures; real analysis |
-| test_interrogate_tool.py | 9 | Config, Execution | Unit with fixtures; real analysis |
-| test_mypy_tool.py | 10 | Config, Execution, Output | Unit; real mypy; JSON→Message mapping |
-| test_parsing.py | 19 | Validation, Registry, Matchers | Unit; comprehensive schema/regex |
-| **Total** | **46** | | |
+| test_base_tool.py | 11 | Unit | Concrete subclass of ExtendedToolBase |
+| test_cli.py | 9 | Unit | Patch registration and main() integration |
+| test_complexipy_tool.py | 8 | Integration | Fixture files with real complexity analysis |
+| test_interrogate_tool.py | 9 | Integration | Fixture files with docstring detection |
+| test_mypy_tool.py | 17 | Integration + Edge | JSON/text conversion, formatting, unconfigured behavior |
+| test_parsing.py | 28 | Unit + Integration | Models, registry, matchers, JSON schema validation |
+| test_vulture_tool.py | 11 | Integration + Edge | Whitelist handling, confidence filtering, file scanning |
 
-Test density: 46 tests / 1,504 source statements = 0.031 tests per statement.
-Test-to-code LOC ratio: ~1:2 (752 test LOC : 1,504 source LOC).
+Test density: 93 tests / 494 statements = 0.19 tests per statement.
+Test-to-code LOC ratio: 1,028 / 1,201 = 0.86:1.
 
 ### Findings
 
-1. **[Must-Fix] No Tests for CLI Module** — `cli.py` (57 LOC) is completely
-   untested. `patch_prospector_tools()` and `main()` are the public API entry
-   points with zero coverage.
+**[High] complexipy_tool.py coverage gap (77.1% — BELOW 80% threshold):**
+- Missing coverage for lines 44-45 (ImportError fallback), 50-57 (exception handling for
+  SyntaxError, OSError, UnicodeDecodeError, ValueError, AttributeError), and line 74
+- No test for missing complexipy import, syntax error recovery, file access errors, or
+  encoding errors
+- This is the only file below threshold and currently blocks `poe checks`
 
-2. **[Must-Fix] No Tests for VultureTool** — `vulture_tool.py` (229 LOC)
-   including `ProspectorVultureExtended` and `VultureTool` classes has no test
-   file. This is a core tool replacement with no regression tests.
+**[Recommended] parsing/registry.py serialization methods untested (88.4%):**
+- `to_dict()`, `save()`, `load()` at lines 290-314 have no direct tests
+- `parse_output()` tested indirectly via `parse_mypy_output` but not directly
+- Low risk: serialization paths are non-critical during tool execution
 
-3. **[Must-Fix] No Tests for ExtendedToolBase** — `base.py` (133 LOC) is
-   tested indirectly through subclasses but the base class itself (ignore_codes
-   handling, Location creation, message suppression) is never directly verified.
+**[Recommended] PredicateMatcher untested:**
+- `registry.py:122-136` — exists as a matcher strategy but has zero test coverage
+- Valid matcher class but appears unused in current codebase
 
-4. **[High] Incomplete Error Path Coverage** — Tool tests verify successful
-   execution but not error conditions: no tests for invalid file paths,
-   subprocess failures, or malformed tool output.
-
-5. **[High] Matcher Priority Ordering Not Tested** — Matcher classes define
-   `priority()` methods but no test verifies higher-priority matchers are tried
-   first when both match.
-
-6. **[High] Schema Fingerprint Drift Untested** — `compute_fingerprint()` is
-   tested for determinism but not that fingerprint changes when schema changes.
-   `MYPY_SCHEMA_FINGERPRINT` sentinel is never validated against computed value.
-
-7. **[High] Fixture Isolation Weakness** — If fixture files are deleted, tests
-   silently pass (return empty result lists). Tests should verify fixture files
-   exist before asserting on results.
-
-8. **[Recommended] Test Names Lack Specificity** — Names like
-   `test_default_threshold()` don't indicate expected outcome. Better:
-   `test_default_threshold_is_15()`.
+**[Nit] Test assertion specificity:**
+- Some assertions use `any(... in ...)` patterns instead of exact value matching
+  (`test_base_tool.py:84-85`, `test_complexipy_tool.py:102-103`)
+- Acceptable for version-sensitive tool output but reduces precision
 
 ## Dependency Health
 
 ### Overview
 
-The project has 6 runtime dependencies (prospector with extras, mypy, complexipy,
-interrogate, pydantic, jsonschema) and 5 dev dependencies (pytest, pytest-cov,
-poethepoet, ruff, types-jsonschema). Dependencies are locked in `uv.lock` with
-SHA-256 hashes.
+6 direct runtime dependencies, 9 dev dependencies, all actively used. Lock file covers 89
+packages with cryptographic hash verification. Dependencies are reputable and maintained.
 
 ### Findings
 
-1. **[Recommended] Loose Version Constraints** — `pyproject.toml:39-51` uses
-   `>=` specifiers (e.g., `"mypy>=1.10.0"`). While `uv.lock` ensures
-   reproducibility, the minimum versions are stale relative to locked versions
-   (e.g., complexipy declared `>=0.4.0` but locked to `5.1.0`).
+**[High] 3 unsuppressed CVEs in transitive dependencies:**
+- CVE-2022-42969 (py:1.11.0) — Disputed ReDoS, not in application code
+- CVE-2018-20225 (pip:25.3) — Package installation attack vector, moderate severity
+- CVE-2026-1703 (pip:25.3) — Path traversal, low severity
 
-2. **[Nit] Homepage URL Mismatch** — `pyproject.toml:68` points to the main
-   Prospector repo, not this project's repository.
+All are in transitive build/test tooling dependencies, not application code. Consider formal
+suppression with documented rationale.
+
+**[Recommended] Optional dependencies declared as runtime:**
+- Mypy, complexipy, and interrogate are runtime deps but imported only within try/except
+  blocks after tool instantiation
+- Pattern is intentional (graceful degradation) but means packages must be present even if
+  tools aren't configured
 
 ### Metrics
 
 | Metric | Value |
 |--------|-------|
 | Runtime dependencies | 6 |
-| Dev dependencies | 5 |
-| Vendored dependencies | 0 |
-| Lock file present | Yes (uv.lock, 1,140 lines) |
-| Hash verification | Yes (SHA-256) |
-| Known vulnerabilities | poe xray not available |
+| Dev dependencies | 9 |
+| Vendored dependencies | Yes (vendor/*.whl) |
+| Lock file present | Yes (uv.lock) |
+| Hash verification | 100% of 89 packages |
+| Unsuppressed CVEs | 3 (all transitive) |
 
 ## Project Infrastructure
 
@@ -368,226 +353,216 @@ SHA-256 hashes.
 
 | Tool | Local | Pre-commit | CI/CD |
 |------|-------|-----------|-------|
-| ruff (lint) | `poe lint` | — | — |
-| ruff (format) | `poe format` | — | — |
-| pytest | `poe test` | — | — |
-| pytest-cov | `poe test-coverage` | — | — |
-| mypy | via `poe checks` | — | — |
-| bandit | via `poe checks` | — | — |
-| vulture | via `poe checks` | — | — |
-| complexipy | via `poe checks` | — | — |
-| interrogate | via `poe checks` | — | — |
-| pylint (dup code) | via `poe checks` | — | — |
+| Ruff (lint) | `poe lint` | ruff (--fix) | — |
+| Ruff (format) | `poe format-check` | ruff-format | — |
+| Mypy | `poe types` | — | — |
+| Bandit | `poe security` | — | — |
+| Pytest + coverage | `poe test-coverage` | — | — |
+| Vulture | `poe quality` | — | — |
+| Complexipy | `poe quality` | — | — |
+| Interrogate | `poe quality` | — | — |
+| Pylint (duplication) | `poe quality` | — | — |
+| xray-audit (CVE) | `poe xray` | xray-audit (pre-push) | — |
+| Commitizen | — | commitizen (commit-msg) | — |
 
-All quality enforcement is local-only. No automated gates exist at commit,
-push, or merge time.
+The CI/CD column is entirely empty — no automated pipeline exists.
 
 ### CI/CD Pipeline
 
-**Not configured.** No `.gitlab-ci.yml`, `.github/workflows/`, or equivalent
-CI pipeline exists. All quality checks depend on developer discipline.
+**[Critical] No CI/CD pipeline exists.** No `.gitlab-ci.yml`, `.github/workflows/`, or
+equivalent CI configuration was found. Quality gates are enforced only locally via pre-commit
+hooks and manual `poe checks` execution.
+
+Impact: Code can be pushed that fails tests, has type errors, has security issues, violates
+quality thresholds, or introduces duplicated code — none of this is caught automatically before
+merge.
 
 ### Pre-commit Hooks
 
-**Not configured.** No `.pre-commit-config.yaml` exists. Code can be committed
-without any quality validation.
+10 hooks configured across 3 stages:
+
+| Hook | Stage | Purpose |
+|------|-------|---------|
+| trailing-whitespace | commit | Trim trailing whitespace |
+| end-of-file-fixer | commit | Ensure newline at EOF |
+| check-yaml | commit | Validate YAML syntax |
+| check-toml | commit | Validate TOML syntax |
+| check-json | commit | Validate JSON syntax |
+| check-added-large-files | commit | Prevent large file commits |
+| ruff (lint + fix) | commit | Auto-fix linting issues |
+| ruff-format | commit | Format verification |
+| commitizen | commit-msg | Enforce Conventional Commits |
+| xray-audit | pre-push | CVE vulnerability scanning |
+
+Gaps: No type checking (mypy), no test execution, no docstring validation, no comprehensive
+quality scanning (prospector-extended).
 
 ### Findings
 
-1. **[Critical] No CI/CD Pipeline** — No automated quality gates on
-   branches/merges. No test validation, no coverage enforcement, no
-   vulnerability scanning in any pipeline.
+**[Must-Fix] Coverage enforcement blocks pipeline:**
+- `poe checks` aborts at `validate-coverage` because complexipy_tool.py is at 77.14%
+  (threshold: 80%)
+- `format-check` and `quality` never run in the same invocation
 
-2. **[Critical] No Pre-commit Hooks** — No `.pre-commit-config.yaml`. Quality
-   violations can be committed without friction.
+**[Must-Fix] Check task sequencing:**
+- `pyproject.toml:303`: `checks = ["test-coverage", "format-check", "quality"]`
+- When test-coverage fails, format-check and quality are skipped
+- Developers don't see all issues at once; consider reordering (format-check first) or
+  running independently
 
-3. **[High] Poe Tasks Missing vs Template** — Compared to the standard
-   `python-base-template`, the following poe tasks are absent:
-   - `sync-setup` (uv sync + vendor install)
-   - `ensure-hooks` (pre-commit install)
-   - `format-check` (ruff format --check)
-   - `test-cov` / `test-slow` / `test-all` (granular test runners)
-   - `validate-coverage` (coverage threshold validation)
-   - `types` (standalone mypy)
-   - `security` (standalone bandit)
-   - `xray` (vulnerability scan)
-   - `quality` (prospector-extended with tee to .task/)
-   - `docs` (pdoc generation)
-   - `clean` (artifact cleanup)
-   - Composite `checks` should be `[test-coverage, format-check, quality]`
-
-4. **[High] Missing Template Configurations** — The project lacks several
-   standard configurations from `python-base-template`:
-   - `[tool.coverage.run]` with `branch = true` and `fail_under = 80`
-   - `[tool.coverage.report]` with `exclude_lines`
-   - `[tool.commitizen]` for conventional commits
-   - `[dependency-groups]` (uses legacy `[project.optional-dependencies]`)
-   - `[tool.uv]` with `python-preference = "only-system"`
-   - Build system should use `uv_build` not `hatchling`
+**[Recommended] Pre-commit doesn't run tests:**
+- A developer can commit code that breaks tests as long as formatting passes
+- Recommend adding pytest to pre-commit or relying on CI/CD (once it exists)
 
 ### Metrics
 
 | Metric | Value |
 |--------|-------|
-| CI/CD pipelines | 0 |
-| Pre-commit hooks | 0 |
-| Quality tools (local) | 9 |
-| Quality tools (CI) | 0 |
-| Vulnerability scanning (CI) | No |
-| Poe tasks defined | 6 (template has 18) |
-| Documentation files | 1 (README.md only) |
+| CI/CD jobs | 0 |
+| Quality tools configured | 9 (via prospector-extended) |
+| Pre-commit hooks | 10 |
+| Poe tasks | 18 |
+| Vulnerability scanning in CI | No |
 
 ## Documentation
 
 ### Strengths
 
-1. **Comprehensive README.md** (279 lines) — Feature overview, installation,
-   CLI usage, configuration reference, error code reference, thresholds table,
-   development workflow, architecture explanation, and contributing guidelines.
-
-2. **Well-commented Configuration** — Both `pyproject.toml` and
-   `.prospector.yaml` have clear section headers and inline comments explaining
-   each tool's configuration and prospector-extended exclusive features.
-
-3. **100% Inline Docstrings** — Google-style docstrings on all public
-   functions/classes, confirmed by interrogate.
+- **Comprehensive architecture documentation:** `docs/ARCHITECTURE.md` covers internal design,
+  data flow, patterns, and 3 ADRs
+- **Full documentation suite:** README.md, ARCHITECTURE.md, DEVELOPMENT.md, SUPPRESSIONS.md,
+  SECURITY.md, CHANGELOG.md, PROJECT.md, REQUIREMENTS.md, STATUS.md, TODO.md
+- **Suppression audit trail:** Every `type: ignore` documented in SUPPRESSIONS.md with
+  justification and approval date
+- **Requirements traceability:** FR-001 through FR-006 with acceptance criteria checkboxes
+- **Keep a Changelog format:** CHANGELOG.md follows standard versioning conventions
 
 ### Gaps or Risks
 
-1. **[High] Missing Standard Documentation Files** — Per the project's own
-   CLAUDE.md standards, these are required but absent:
-   - `CHANGELOG.md` — No version history (project is at v0.2.0)
-   - `PROJECT.md` — No tech stack, thresholds, or structure docs
-   - `SECURITY.md` — No security policy or vulnerability reporting
-   - `docs/DEVELOPMENT.md` — No contributor guide
-   - `docs/ARCHITECTURE.md` — No design patterns or data flow docs
-   - `REQUIREMENTS.md` — No functional specification
-   - `STATUS.md` / `TODO.md` — No project state tracking
+**[High] No CI/CD documentation:**
+- DEVELOPMENT.md has no section on CI/CD setup or pipeline
+- New contributors won't understand how quality gates are enforced (answer: they aren't,
+  beyond pre-commit)
 
-2. **[Recommended] Missing SUPPRESSIONS.md** — The project has ~5
-   `type: ignore` comments but no `docs/SUPPRESSIONS.md` per CLAUDE.md policy.
+**[High] CLI documentation lacks usage examples:**
+- README.md shows basic invocation but missing: excluding specific tools, custom
+  `.prospector.yaml` location, exit codes, piping output
 
-3. **[Recommended] Stale Sample Files** — `sample-prospector.yaml` and
-   `sample-pyproject.toml` in repo root are not referenced from README and may
-   be outdated.
+**[Recommended] Architecture docs assume Prospector knowledge:**
+- Data flow references Prospector internals without explaining config loading or tool
+  path resolution
 
-4. **[Nit] Sample Files Location** — Sample configs should be in
-   `docs/examples/` or `samples/` rather than repo root.
+**[Recommended] No troubleshooting guide:**
+- Missing guidance for: mypy import errors on untyped dependencies, vulture false positive
+  management, xray-audit latency
+
+**[Recommended] No performance/scalability guidance:**
+- No documentation on analysis time for medium/large codebases, memory requirements, or
+  caching behavior
+
+**[Nit] CHANGELOG.md "Unreleased" section has partial entries:**
+- Mix of completed features under "Unreleased" heading; consider versioning or clearer grouping
 
 ## Design Decisions Worth Highlighting
 
-1. **Two Base Class Patterns** — File-by-file tools use `ExtendedToolBase`
-   (template method with `_analyze_file()`); whole-project tools inherit
-   `ToolBase` directly. This reflects a real difference in how tools interact
-   with Prospector's file iteration model.
+1. **Runtime tool patching over forking Prospector** — `cli.py` patches `prospector.tools.TOOLS`
+   dict at runtime rather than forking or monkey-patching Prospector source. This preserves
+   compatibility and allows the library to track upstream changes.
 
-2. **Monkey-Patching Tool Registration** — `cli.py:32-37` patches Prospector's
-   internal tool registry rather than using Prospector's plugin system. This is
-   pragmatic (Prospector's plugin API is limited) but creates coupling to
-   Prospector internals.
+2. **File-by-file vs all-at-once tool execution** — ExtendedToolBase provides file-by-file
+   analysis (suitable for complexipy, interrogate, vulture), while MypyTool inherits directly
+   from ToolBase for all-at-once execution. The split acknowledges that type checking is
+   fundamentally cross-file.
 
-3. **Pydantic for Structured Parsing** — Uses Pydantic models with field
-   validators for mypy JSON output, providing schema validation and safe
-   default coercion. This is appropriate for external tool output parsing.
+3. **Type Registry for polymorphic parsing** — Rather than hard-coding mypy output format
+   handling, the project uses a generic registry with schema matchers. This is more complex
+   than needed for mypy alone but anticipates future tools with varied output formats.
 
-4. **Priority-Sorted Matchers** — Schema matchers are sorted by priority at
-   registration time, not at match time. This is a correct optimization since
-   the registry is built once and queried many times.
+4. **Pydantic for tool output validation** — External tool output (JSON from mypy) is validated
+   through Pydantic models with field validators rather than trusted as correct. This catches
+   format changes in upstream tools early.
 
-5. **Whitelist as Extension** — Vulture whitelist support is implemented by
-   subclassing Vulture itself (`ProspectorVultureExtended`) rather than
-   post-processing output. This ensures whitelist entries affect confidence
-   calculations, not just filtering.
+5. **Deferred imports for optional tools** — Tool-specific libraries are imported inside methods
+   (not at module level), allowing graceful degradation if a tool isn't installed. Declared
+   as runtime deps to ensure they're available by default.
+
+6. **Vulture whitelist via subclass** — ProspectorVultureExtended extends Vulture directly and
+   overrides `scavenge()` to pre-scan whitelist files. This is cleaner than post-filtering
+   results and leverages vulture's own "used" tracking.
 
 ## Technical Debt Assessment
 
 ### Estimated Debt
 
-Moderate technical debt, concentrated in infrastructure and test coverage
-rather than code quality. The codebase is young (2 commits, v0.2.0) and the
-debt reflects an early-stage project where code quality was prioritized over
-operational tooling.
+Low overall debt for a 20-commit, 1,201-LOC project. The codebase was built with quality
+tooling from the start, so debt is concentrated in infrastructure gaps rather than code quality.
 
 ### Highest-Cost Areas
 
-1. **No CI/CD Pipeline** [Critical, Medium effort] — Every quality tool exists
-   locally but nothing prevents bad code from being committed or merged.
-   Highest-impact improvement per hour invested.
+1. **No CI/CD pipeline** [Critical] — Highest-impact gap. Effort: 2-4 hours for basic
+   GitLab/GitHub Actions setup with check, test, quality, and security stages. Blocks
+   confidence in merge quality.
 
-2. **Test Coverage Gaps** [Must-Fix, Medium effort] — CLI (57 LOC), VultureTool
-   (229 LOC), and ExtendedToolBase (133 LOC) have zero tests. These total 419
-   LOC (28% of source) with no regression protection.
+2. **complexipy_tool.py coverage gap** [Must-Fix] — Blocks `poe checks`. Effort: 30 minutes
+   to add error path tests (mock ImportError, fixture with SyntaxError, mock OSError).
 
-3. **Poe Task Alignment** [High, Low effort] — Project defines 6 poe tasks vs.
-   18 in the standard template. Missing tasks include `format-check`, `types`,
-   `security`, `quality`, `clean`, `sync-setup`, and composite `checks`.
+3. **Version mismatch** [Must-Fix] — `__init__.py` says 0.1.0, pyproject.toml says 0.2.0.
+   Effort: 1 minute to fix, but indicates commitizen bump wasn't run or wasn't configured
+   correctly.
 
-4. **Documentation Gap** [High, Medium effort] — Only README.md exists.
-   Missing CHANGELOG, PROJECT.md, SECURITY.md, DEVELOPMENT.md, and
-   ARCHITECTURE.md per the project's own CLAUDE.md standards.
+4. **Check task sequencing** [Must-Fix] — `poe checks` aborts on first failure. Effort:
+   5 minutes to reorder or restructure poe tasks for better developer feedback.
 
-5. **Silent Error Handling** [Recommended, Low effort] — Multiple tools
-   silently swallow errors, making diagnosis difficult. Adding structured
-   logging at DEBUG level is low-effort, high-diagnostic-value.
+5. **No timeouts on external tool execution** [High] — mypy, complexipy, interrogate have
+   no timeout. Effort: 30 minutes to add signal-based or threading-based timeout wrappers.
 
 ### Duplication
 
-No significant duplication detected. Pylint duplicate-code checker is
-configured with `min-similarity-lines = 4` and produced no findings in the
-quality baseline.
+No significant duplication detected. Pylint duplicate-code checker is configured
+(`pyproject.toml:225-234`, min-similarity-lines=4) and runs as part of `poe quality` via
+prospector-extended. 0 messages reported.
 
 ## Quantitative Summary
 
-| Metric | Value |
-|--------|-------|
-| **Code Metrics** | |
-| Total source LOC | 1,504 |
-| Total test LOC | 752 (est.) |
-| Test-to-code ratio | ~1:2 |
-| Source files | 11 |
-| Test files | 4 (+4 fixtures) |
-| Total tests | 46 |
-| Branch-inclusive coverage | Not measured |
-| Duplication | None detected (pylint, min 4 lines) |
-| **Complexity** | |
-| Max cyclomatic complexity | Within threshold (mccabe max=10, 0 violations) |
-| Cognitive complexity | Within threshold (complexipy max=15, 0 violations) |
-| Max function length | 38 lines |
-| Deepest nesting | 3 levels |
-| Public functions/classes | 44 |
-| Private/internal functions | 23 |
-| Functions with >3 parameters | 3 |
-| **Dependencies** | |
-| Runtime dependencies | 6 |
-| Dev dependencies | 5 |
-| Vendored dependencies | 0 |
-| Lock file status | Present (uv.lock, SHA-256 hashes) |
-| Known vulnerabilities | Not scanned (poe xray unavailable) |
-| **Infrastructure** | |
-| CI/CD jobs | 0 |
-| Quality tools configured | 9 |
-| Documentation files | 1 (README.md) |
-| Pre-commit hooks | 0 |
-| Vulnerability scanning (CI) | No |
+| Category | Metric | Value |
+|----------|--------|-------|
+| **Code** | Source LOC (Python) | 1,201 |
+| | Test LOC (Python) | 1,028 |
+| | Test-to-code ratio | 0.86:1 |
+| | Source files | 11 |
+| | Test files | 14 (7 test + 6 fixture + 1 conftest) |
+| | Total tests | 93 |
+| | Branch-inclusive coverage | 90.5% |
+| | Duplication ratio | 0% (pylint) |
+| **Complexity** | Cyclomatic complexity max | ≤ 10 (threshold, 0 violations) |
+| | Cognitive complexity max | ≤ 15 (threshold, 0 violations) |
+| | Max function length | 58 lines (schema_from_fields) |
+| | Deepest nesting level | 6 (vulture_tool.scavenge) |
+| | Public functions/classes | ~25 |
+| | Private/internal functions | ~10 |
+| | Functions with >3 parameters | 2 |
+| **Dependencies** | Runtime dependencies | 6 |
+| | Dev dependencies | 9 |
+| | Vendored dependencies | Yes |
+| | Lock file status | Present, hash-verified (89 packages) |
+| | Known vulnerabilities | 3 unsuppressed (all transitive) |
+| **Infrastructure** | CI/CD jobs | 0 |
+| | Quality tools configured | 9 |
+| | Documentation files | 10 |
+| | Pre-commit hooks | 10 |
+| | Vulnerability scanning in CI | No |
 
 ## Overall Assessment
 
-Prospector Extended earns a **B overall** — strong engineering fundamentals
-held back by missing operational infrastructure. The source code is genuinely
-well-crafted: strict typing, complete documentation, clean architecture, zero
-security findings, and no complexity violations. The design patterns
-(strategy, template method, builder, adapter) are appropriate and
-well-implemented, not over-engineered.
+prospector-extended earns a **B** — a well-built library with strong code quality fundamentals
+and a mature local development experience, held back by the absence of CI/CD enforcement.
 
-The project's weakest dimension is infrastructure (**D**). Every quality tool
-exists locally but nothing enforces standards at commit or merge time. Adding
-CI/CD and pre-commit configuration would immediately raise the overall grade.
-The second gap is test coverage (**C**) — 46 tests is solid for parsing and
-tool execution, but three core modules (CLI, VultureTool, ExtendedToolBase)
-totaling 419 LOC have zero tests.
+The strongest dimensions are Architecture (A) and Code Quality (A). The codebase demonstrates
+discipline: strict typing, comprehensive docstrings, intentional error handling, zero tool
+violations, and clean design patterns. For a 1,201-LOC library, the engineering quality is high.
 
-**Single most impactful improvement:** Add a CI/CD pipeline with the standard
-poe task suite from `python-base-template`. This would enforce the quality
-standards that already exist locally, close the infrastructure gap, and provide
-the automated gates that a tool project — especially one that other projects
-depend on — requires for confidence in releases.
+The weakest dimension is Infrastructure (D). Without CI/CD, quality gates are advisory — they
+exist locally but nothing prevents unvalidated code from reaching the repository. This is the
+single most impactful improvement the project could make: implementing a CI/CD pipeline that
+runs `poe checks` on every push would close the largest gap in the project's quality story
+and move the overall grade toward A.

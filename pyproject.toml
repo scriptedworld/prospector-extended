@@ -57,6 +57,10 @@ Repository = "https://github.com/scriptedworld/prospector-extended"
 [tool.uv]
 python-preference = "only-system"
 
+[tool.uv.sources]
+claude-scripts = { path = "../claude-scripts", editable = true }
+data = { path = "../data", editable = true }
+
 [build-system]
 requires = ["uv_build>=0.10.0,<0.11.0"]
 build-backend = "uv_build"
@@ -66,6 +70,8 @@ build-backend = "uv_build"
 # =============================================================================
 [dependency-groups]
 dev = [
+    "claude-scripts",
+    "data",
     # Note: bandit, vulture, ruff are already runtime deps via prospector extras
     "commitizen>=4.12.0",
     "pdoc>=16.0.0",
@@ -275,7 +281,6 @@ version_files = [
 [tool.poe.tasks]
 sync-setup = [
     { cmd = "uv sync" },
-    { shell = "uv pip install vendor/*.whl 2>/dev/null || true" },
 ]
 ensure-hooks = [
     { cmd = "pre-commit install" },

@@ -21,14 +21,25 @@
 - [x] 2.01 - Add PROJECT.md and REQUIREMENTS.md
 - [x] 2.03 - Add CHANGELOG.md and SECURITY.md
 - [x] 2.05 - Add docs/DEVELOPMENT.md, docs/ARCHITECTURE.md, docs/SUPPRESSIONS.md
-- [~] 2.07 - Add TODO.md, STATUS.md, NEXT_STEPS.md
+- [x] 2.07 - Add TODO.md, STATUS.md, NEXT_STEPS.md
 
 ## Phase 3: Quality & Test Coverage
 
-- [ ] 3.01 - Fix 4 quality violations in vulture_tool.py
-- [ ] 3.03 - Add tests for cli.py
-- [ ] 3.05 - Add tests for VultureTool
-- [ ] 3.07 - Add tests for ExtendedToolBase
-- [ ] 3.09 - Add error path and edge case tests
+- [x] 3.01 - Fix 4 quality violations in vulture_tool.py
+- [x] 3.03 - Add tests for cli.py
+- [x] 3.05 - Add tests for VultureTool
+- [x] 3.07 - Add tests for ExtendedToolBase
+- [x] 3.09 - Add error path and edge case tests
+
+## Phase 4: Metrics Integration
+
+- [ ] 4.01 - MetricsCollector and `metrics` JSON block infrastructure
+- [ ] 4.03 - RadonTool: cyclomatic complexity, raw LOC, maintainability index
+- [ ] 4.05 - StructureTool: AST-based function length, nesting, visibility, params
+- [ ] 4.07 - Extend complexipy_tool to emit all per-function cognitive scores
+- [ ] 4.09 - Extend interrogate_tool to emit coverage % and per-type counts
+- [ ] 4.11 - Extend vulture_tool to emit dead code summary metrics
+- [ ] 4.13 - Suppression counting and pylint duplication metrics
+- [ ] 4.15 - End-to-end integration tests for metrics output
 
 See `tasks/` for detailed task files.

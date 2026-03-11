@@ -7,7 +7,8 @@
 | 1 — Project Infrastructure | 6 | 6 | 0 |
 | 2 — Documentation | 4 | 4 | 0 |
 | 3 — Quality & Test Coverage | 5 | 5 | 0 |
-| **Total** | **15** | **15** | **0** |
+| 4 — Metrics Integration | 8 | 0 | 8 |
+| **Total** | **23** | **15** | **8** |
 
 ## Phase 1: Project Infrastructure
 
@@ -44,3 +45,20 @@ Fix quality violations and close test coverage gaps identified in code review.
 | 3.05 | [x] | [3.05-test-vulture-tool.md](phase-3/3.05-test-vulture-tool.md) | Add tests for VultureTool |
 | 3.07 | [x] | [3.07-test-base-tool.md](phase-3/3.07-test-base-tool.md) | Add tests for ExtendedToolBase |
 | 3.09 | [x] | [3.09-test-error-paths.md](phase-3/3.09-test-error-paths.md) | Add error path and edge case tests |
+
+## Phase 4: Metrics Integration
+
+Add quantitative code metrics to prospector-extended JSON output. Currently only violations are surfaced — this phase adds a `metrics` block with complexity scores, LOC data, maintainability index, structural analysis, and coverage statistics for all functions (not just those exceeding thresholds).
+
+Design doc: `docs/design/metrics-integration.md`
+
+| Task | Status | File | Description |
+|------|--------|------|-------------|
+| 4.01 | [ ] | [4.01-metrics-output-infrastructure.md](phase-4/4.01-metrics-output-infrastructure.md) | MetricsCollector and `metrics` JSON block infrastructure |
+| 4.03 | [ ] | [4.03-radon-tool.md](phase-4/4.03-radon-tool.md) | RadonTool: cyclomatic complexity, raw LOC, maintainability index |
+| 4.05 | [ ] | [4.05-structure-tool.md](phase-4/4.05-structure-tool.md) | StructureTool: AST-based function length, nesting, visibility, params |
+| 4.07 | [ ] | [4.07-complexipy-metrics.md](phase-4/4.07-complexipy-metrics.md) | Extend complexipy_tool to emit all per-function cognitive scores |
+| 4.09 | [ ] | [4.09-interrogate-metrics.md](phase-4/4.09-interrogate-metrics.md) | Extend interrogate_tool to emit coverage % and per-type counts |
+| 4.11 | [ ] | [4.11-vulture-metrics.md](phase-4/4.11-vulture-metrics.md) | Extend vulture_tool to emit dead code summary metrics |
+| 4.13 | [ ] | [4.13-suppression-duplication-metrics.md](phase-4/4.13-suppression-duplication-metrics.md) | Suppression counting and pylint duplication metrics |
+| 4.15 | [ ] | [4.15-metrics-integration-tests.md](phase-4/4.15-metrics-integration-tests.md) | End-to-end integration tests for metrics output |

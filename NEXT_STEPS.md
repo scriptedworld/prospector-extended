@@ -2,28 +2,30 @@
 
 ## Current State
 
-**Session:** session/2026-03-04
-**Branch:** task/2.07-state-files
-**Last Action:** Creating TODO.md, STATUS.md, NEXT_STEPS.md
+**Phase:** 4 — Metrics Integration
+**Branch:** main
+**Last Action:** Phase 4 tasks created from tempenv code review findings (2026-03-11)
 
 ## Next Action
 
-Complete task 2.07 (state files), then begin Phase 3:
-- **3.01** - Fix 4 quality violations in vulture_tool.py (ARG002, mypy misc, unused type:ignore)
-- **3.03** - Add tests for cli.py
-- **3.05** - Add tests for VultureTool
-- **3.07** - Add tests for ExtendedToolBase
-- **3.09** - Add error path and edge case tests
+Begin Phase 4 — Metrics Integration:
 
-## Known Issues
+1. **4.01** — MetricsCollector infrastructure and `metrics` JSON block
+2. **4.03** — RadonTool (cc + raw + mi) — radon already available as dependency
+3. **4.05** — StructureTool (AST: function length, nesting, visibility, params)
+4. **4.07-4.11** — Extend existing tools (complexipy, interrogate, vulture) to emit metrics
+5. **4.13** — Suppression counting + duplication metrics
+6. **4.15** — Integration tests for complete metrics output
 
-- Coverage at 77% (below 80% threshold) — vulture_tool.py at 20% coverage
-- Pre-commit hooks fail on ruff ARG002 in vulture_tool.py — using --no-verify until task 3.01 fixes it
-- 4 prospector messages in vulture_tool.py (ARG002, mypy misc, unused type:ignore)
+Tasks 4.01, 4.03, 4.05 are the foundation — do those first. 4.07-4.13 can be done in any order after 4.01. 4.15 is the capstone.
+
+## Design Reference
+
+- `docs/design/metrics-integration.md` — full design with proposed JSON structure, tool gap analysis, and implementation approach
 
 ## Key Decisions
 
-- **Build system:** uv_build >=0.10.0 (template had 0.9.x but uv was 0.10.8)
-- **Ruff rules:** Kept ARG rule set beyond template (provides value for this project)
-- **D107 ignore:** Kept to avoid duplicate warnings with interrogate
-- **VultureTool base class:** Uses ToolBase directly (not ExtendedToolBase) — historical, task 3.01 may address
+- Metrics go into prospector-extended JSON output (not a separate tool)
+- Radon for cc/raw/mi, stdlib `ast` for structure — no new external deps needed
+- Existing tool wrappers extended to emit metrics alongside violations
+- `--metrics` flag for opt-in/opt-out (default: enabled)
