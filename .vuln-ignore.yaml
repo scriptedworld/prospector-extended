@@ -1,0 +1,31 @@
+# CVE suppressions for jf audit findings.
+#
+# Each entry requires:
+#   id:      CVE identifier
+#   reason:  Why this CVE is suppressed
+#   expires: Date to re-evaluate (YYYY-MM-DD) — expired entries cause scan failures
+#
+# Suppressions are applied by xray-audit (installed from vendor/).
+
+ignored_cves:
+  - id: CVE-2018-20225
+    reason: >-
+      Disputed by pip maintainers and RHEL. Only applies when using
+      --extra-index-url, which this project does not use. JFrog Research
+      downgrades to Medium.
+    expires: "2027-01-01"
+
+  - id: CVE-2026-1703
+    reason: >-
+      pip wheel extraction path traversal. Low severity, limited to
+      prefixes of the install directory. pip is a dev dependency only —
+      not used at runtime. jf audit reports pip 25.3 despite pip 26.0.1
+      being resolved in uv.lock (jf uses its own system Python discovery).
+    expires: "2027-01-01"
+
+  - id: CVE-2022-42969
+    reason: >-
+      Disputed ReDoS in py library via SVN info parsing. py 1.11.0 is
+      a transitive dep of interrogate. Not reproducible per multiple
+      third-party reports. No fix available (py is unmaintained).
+    expires: "2027-01-01"
